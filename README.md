@@ -10,8 +10,6 @@ wget -r -N -c -np https://physionet.org/files/mitdb/1.0.0/
 aws s3 sync --no-sign-request s3://physionet-open/mitdb/1.0.0/ DESTINATION
 '
 
-ECG
-https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/SinusRhythmLabels.svg/1024px-SinusRhythmLabels.svg.png
 
 Basic Statistics (4 features):
 len(seg): The number of data points in the heartbeat segment.

@@ -4,6 +4,7 @@ from wfdb.processing import xqrs_detect, ann2rr  # Heartbeat detection & RR inte
 import numpy as np  # Numerical ops
 import pywt  # Wavelet transforms
 import scipy.stats  # Statistical functions
+import matplotlib.pyplot as plt  # For plotting ECG
 
 
 # 2️⃣ Turn special beat codes into easy names
@@ -25,12 +26,33 @@ def map_to_AAMI(symbol):
 # 3️⃣ Process just record "100"
 record = wfdb.rdsamp('physionet.org/files/mitdb/1.0.0/100', channels=[0])  # Read ECG signal
 ann = wfdb.rdann('physionet.org/files/mitdb/1.0.0/100', 'atr')  # Read beat labels
+# 'atr' refers to the annotation file extension.
 ecg = record[0].flatten()  # Flatten ECG signal
 fs = record[1]['fs']  # Sampling frequency
 
 # 4️⃣ Find every heartbeat spike (R peak)
 rpeaks = xqrs_detect(ecg, fs=fs)  # Pan–Tompkins R-peak detection
 # This method uses filters and special math to pick out real heartbeats
+
+# 📊 Plot ECG with R-peaks
+plt.figure(figsize=(12, 6))
+
+# Define the time window for plotting (e.g., first 10 seconds)
+plot_duration = 10  # seconds
+plot_samples = int(plot_duration * fs)
+
+# Slice the ECG signal and R-peaks for the plot window
+ec_plot = ecg[:plot_samples]
+rpeaks_plot = rpeaks[rpeaks < plot_samples]
+
+plt.plot(ec_plot)
+plt.plot(rpeaks_plot, ec_plot[rpeaks_plot], 'rx', markersize=8)  # Mark R-peaks
+plt.title('ECG Signal with Detected R-Peaks (First 10 Seconds)')
+plt.xlabel('Sample Number')
+plt.ylabel('Amplitude')
+plt.grid(True)
+plt.show()
+
 
 # 5️⃣ Measure time gaps between beats
 rr_intervals = ann2rr(record_name='physionet.org/files/mitdb/1.0.0/100', extension='atr', as_array=True)
@@ -40,18 +62,19 @@ beat_features = []
 beat_labels = []
 
 # 7️⃣ For each heartbeat, grab info
-window = int(0.25 * fs)  # Save 0.25 sec before/after spike
+window = int(0.25 * fs)  # 0.25 sec before/after spike
 
 for i, r in enumerate(rpeaks):
-    seg = ecg[max(0, r-window): r+window]  # The heartbeat window
+    seg = ecg[max(0, r-window): r+window]  # Heartbeat window
     feats = []
-    # ➕ Basic stats: how long, average height, wiggle amount, top-to-bottom height
+    # ➕ Basic stats: length, avg height, wiggle, top-to-bottom
     feats.extend([
         len(seg),  # Number of points
         np.mean(seg),  # Average height
         np.std(seg),  # Wiggle amount
         np.max(seg) - np.min(seg)  # Height range
     ])
+
 
     # ⏱ Timing info: time between this beat and the next/previous
     feats.append(rr_intervals[i])
