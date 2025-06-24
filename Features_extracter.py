@@ -41,6 +41,7 @@ def extract_features_for_record(rec_name):
     rr_intervals = ann2rr(
         record_name=full_rec_path, extension='atr', as_array=True
     )
+    rr_intervals = np.diff(rpeaks) / fs
 
     print(f"Length of rpeaks: {len(rpeaks)}")
     print(f"Length of annotations: {len(ann.symbol)}")
