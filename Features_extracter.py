@@ -88,8 +88,7 @@ def extract_features_for_record(rec_name):
 
 
 # 4️⃣ Process **all** records in the MIT-BIH dataset
-record_ids = list(range(100, 119)) + list(range(121, 125)) + \
-             list(range(200, 235))  # 48 records total
+record_ids = [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 111, 112, 113, 114, 115, 116, 117, 118, 119, 121, 122, 123, 124, 200, 201, 202, 203, 205, 207, 208, 209, 210, 212, 213, 214, 215, 217, 219, 220, 221, 222, 223, 228, 230, 231, 232, 233, 234]  # All 48 records from RECORDS file
 all_feats, all_labels = [], []
 
 for rec in record_ids:
