@@ -96,6 +96,7 @@ plt.show()
 
 # 5️⃣ Measure time gaps between beats
 rr_intervals = ann2rr(record_name='physionet.org/files/mitdb/1.0.0/100', extension='atr', as_array=True)
+# rr_intervals = np.diff(rpeaks) / fs # in seconds
 
 # 6️⃣ Prepare lists to save data for each beat
 beat_features = []
