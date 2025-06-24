@@ -38,10 +38,9 @@ def extract_features_for_record(rec_name):
 
     # B. Find the R-peaks (heartbeats)
     rpeaks = xqrs_detect(ecg, fs=fs)
-    rr_intervals = ann2rr(
-        record_name=full_rec_path, extension='atr', as_array=True
-    )
+
     rr_intervals = np.diff(rpeaks) / fs
+    rr_intervals = np.insert(rr_intervals, 0, rr_intervals[0])  # Adds the first RR value at index 0 to fix the shape
 
     print(f"Length of rpeaks: {len(rpeaks)}")
     print(f"Length of annotations: {len(ann.symbol)}")
@@ -51,37 +50,31 @@ def extract_features_for_record(rec_name):
     window = int(0.25 * fs)  # 250 ms either side of R-peak
 
     # C. Loop through each beat
-    for i in range(len(ann.symbol)):
-        r = ann.sample[i]
-        seg = ecg[max(0, r-window): r+window]  # The heartbeat window
-        feats = []
-        # 1. Simple waveform stats
-        feats += [len(seg), np.mean(seg), np.std(seg), np.max(seg)-np.min(seg)]
-        # 2. Timing features between beats
-        # Calculate RR intervals directly from annotations
-        if i > 0 and i < len(ann.sample) - 1:
-            rr_current = ann.sample[i] - ann.sample[i-1]
-            rr_prev = ann.sample[i-1] - (
-                ann.sample[i-2] if i > 1 else ann.sample[i-1]
-            )
-        elif i == 0 and len(ann.sample) > 1:
-            rr_current = ann.sample[i+1] - ann.sample[i]
-            rr_prev = rr_current  # Placeholder for the first beat
-        elif len(ann.sample) == 1:
-            rr_current = 0  # No interval for a single beat
-            rr_prev = 0
-        else:
-            rr_current = 0
-            rr_prev = 0
+    for i, r in enumerate(rpeaks):
+        # Extract the heartbeat segment centered around the detected R-peak
+        # Ensure segment bounds are within the ECG signal limits
+        seg = ecg[max(0, r - window): r + window]
 
-        feats += [rr_current, rr_prev]
+        feats = []
+
+        # 1. Simple waveform statistics for the segment
+        feats.extend([len(seg), np.mean(seg), np.std(seg), np.max(seg) - np.min(seg)])
+
+        # 2. Timing info: time between this detected beat and the next/previous
+        # Uses the `rr_intervals` array derived from detected peaks.
+        current_rr = rr_intervals[i]
+        prev_rr = rr_intervals[i - 1] if i > 0 else rr_intervals[i]  # If first beat, prev_rr = current_rr
+
+        feats.extend([current_rr, prev_rr])
+
         # 3. Wavelet decomposition + stats for each band
         coeffs = pywt.wavedec(seg, 'db1', level=3)
         for c in coeffs:
-            feats += [np.mean(c), np.std(c)]
-        # 4. Shape descriptors: skewness & kurtosis
-        feats += [scipy.stats.skew(seg), scipy.stats.kurtosis(seg)]
-        # Save this beat's features and label
+            feats.extend([np.mean(c), np.std(c)])
+
+        # 4. Shape descriptors: skewness & kurtosis of the segment
+        feats.extend([scipy.stats.skew(seg), scipy.stats.kurtosis(seg)])
+
         features.append(feats)
         labels.append(map_to_AAMI(ann.symbol[i]))
 
