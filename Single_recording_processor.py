@@ -56,7 +56,6 @@ plt.ylabel('Amplitude')
 plt.grid(True)
 plt.show()
 
-
 # 📈 Plot Wavelet Decomposition for a Sample Heartbeat
 # Take the first detected R-peak as an example
 first_r = rpeaks[0]
@@ -72,6 +71,10 @@ plt.subplot(num_subplots + 1, 1, 1) # +1 for the original segment
 plt.plot(first_seg)
 plt.title('Original Heartbeat Segment')
 plt.grid(True)
+
+plt.plot(ecg[:fs*10])  # First 10 seconds
+plt.plot(rpeaks[rpeaks < fs*10], ecg[rpeaks[rpeaks < fs*10]], 'rx')
+plt.title("ECG with Detected R-Peaks")
 
 # Plot approximation and detail coefficients
 # The coeffs list is [cA_n, cD_n, cD_n-1, ..., cD_1]
@@ -93,10 +96,10 @@ for i, c in enumerate(coeffs_example):
 plt.tight_layout()
 plt.show()
 
-
 # 5️⃣ Measure time gaps between beats
-rr_intervals = ann2rr(record_name='physionet.org/files/mitdb/1.0.0/100', extension='atr', as_array=True)
-# rr_intervals = np.diff(rpeaks) / fs # in seconds
+# rr_intervals1 = ann2rr(record_name='physionet.org/files/mitdb/1.0.0/100', extension='atr', as_array=True)
+rr_intervals = np.diff(rpeaks) / fs # in seconds
+rr_intervals = np.insert(rr_intervals, 0, rr_intervals[0]) # Adds the first RR value at index 0 to fix the shape
 
 # 6️⃣ Prepare lists to save data for each beat
 beat_features = []
@@ -145,7 +148,7 @@ print(X.shape)
 print("Unique beat labels:", set(y))
 
 # Calculate and print average heart rate and recording length
-avg_rr_interval_seconds = np.mean(rr_intervals) / fs
+avg_rr_interval_seconds = np.mean(rr_intervals)
 avg_heart_rate_bpm = 60 / avg_rr_interval_seconds
 print(f"Average Heart Rate: {avg_heart_rate_bpm:.2f} BPM")
 
