@@ -30,6 +30,9 @@ ann = wfdb.rdann('physionet.org/files/mitdb/1.0.0/100', 'atr')  # Read beat labe
 ecg = record[0].flatten()  # Flatten ECG signal
 fs = record[1]['fs']  # Sampling frequency
 
+# Define the heartbeat window size early, as it's needed for plotting
+window = int(0.25 * fs)  # 0.25 sec before/after spike
+
 # 4️⃣ Find every heartbeat spike (R peak)
 rpeaks = xqrs_detect(ecg, fs=fs)  # Pan–Tompkins R-peak detection
 # This method uses filters and special math to pick out real heartbeats
@@ -54,6 +57,43 @@ plt.grid(True)
 plt.show()
 
 
+# 📈 Plot Wavelet Decomposition for a Sample Heartbeat
+# Take the first detected R-peak as an example
+first_r = rpeaks[0]
+first_seg = ecg[max(0, first_r - window): first_r + window]
+coeffs_example = pywt.wavedec(first_seg, 'db1', level=3)
+
+# Prepare subplot layout: 1 for original, then 3 for details, 1 for approx
+num_subplots = len(coeffs_example)
+plt.figure(figsize=(12, 2 * num_subplots))
+
+# Plot the original segment for reference (optional, but good for context)
+plt.subplot(num_subplots + 1, 1, 1) # +1 for the original segment
+plt.plot(first_seg)
+plt.title('Original Heartbeat Segment')
+plt.grid(True)
+
+# Plot approximation and detail coefficients
+# The coeffs list is [cA_n, cD_n, cD_n-1, ..., cD_1]
+# cA_n is approximation at highest level, cD_i are details
+
+for i, c in enumerate(coeffs_example):
+    if i == 0:
+        # First element is approximation coefficients
+        title = f'Approximation Coefficients (A{num_subplots-1})'
+    else:
+        # Subsequent elements are detail coefficients from highest to lowest level
+        title = f'Detail Coefficients (D{num_subplots-i})'
+
+    plt.subplot(num_subplots + 1, 1, i + 2) # +2 because subplot 1 is original
+    plt.plot(c)
+    plt.title(title)
+    plt.grid(True)
+
+plt.tight_layout()
+plt.show()
+
+
 # 5️⃣ Measure time gaps between beats
 rr_intervals = ann2rr(record_name='physionet.org/files/mitdb/1.0.0/100', extension='atr', as_array=True)
 
@@ -62,8 +102,6 @@ beat_features = []
 beat_labels = []
 
 # 7️⃣ For each heartbeat, grab info
-window = int(0.25 * fs)  # 0.25 sec before/after spike
-
 for i, r in enumerate(rpeaks):
     seg = ecg[max(0, r-window): r+window]  # Heartbeat window
     feats = []
