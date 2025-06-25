@@ -37,7 +37,7 @@ def extract_features_for_record(rec_name):
     fs = fields['fs']                                  # ~360 Hz sampling rate
 
     # B. Find the R-peaks (heartbeats)
-    rpeaks = xqrs_detect(ecg, fs=fs)
+    rpeaks = ann.sample
 
     rr_intervals = np.diff(rpeaks) / fs
     rr_intervals = np.insert(rr_intervals, 0, rr_intervals[0])  # Adds the first RR value at index 0 to fix the shape
@@ -95,3 +95,4 @@ for rec in record_ids:
 X = np.array(all_feats)
 y = np.array(all_labels)
 np.savez('all_ecg_features.npz', X=X, y=y)
+
