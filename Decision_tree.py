@@ -6,7 +6,8 @@ import statistics
 
 # Calculate a section cost
 def gini_cost_function(relative_y):
-    classes = relative_y.unique()
+    print(relative_y, '*****')
+    classes = relative_y['label'].unique()
     cost = 0
     for c in classes:
         prob = np.mean(relative_y == c)
@@ -26,7 +27,8 @@ def find_improvement(father_cost, left_indexes, right_indexes, relative_y):
 
 # Create a split in the data
 def create_split(relative_X, feature, threshold):
-    return relative_X[relative_X[feature] <= threshold].index(), relative_X[relative_X[feature] >= threshold].index()
+    return (relative_X[relative_X.iloc[:, feature] <= threshold].index,
+            relative_X[relative_X.iloc[:, feature] >= threshold].index)
 
 # Check for every threshold
 def find_best_split(relative_X, relative_y, father_cost):
@@ -40,12 +42,12 @@ def find_best_split(relative_X, relative_y, father_cost):
     features = relative_X.shape[1]
     best_improvement = -1
     best_split_feature_index = 0
-    best_split_threshold = relative_X[0,0]
+    best_split_threshold = relative_X.iloc[0,0]
     best_left_indexes = None
     best_right_indexes = None
 
-    for feature_index in features:
-        values = relative_X.loc[relative_X, feature_index].sort_values().unique()
+    for feature_index in range(features):
+        values = relative_X.iloc[feature_index].sort_values().unique()
         thresholds = get_candidate_thresholds(values)
         for threshold in thresholds:
             left_index, right_index = create_split(relative_X, feature_index, threshold)
