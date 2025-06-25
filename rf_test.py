@@ -1,3 +1,7 @@
+import RandomForestClassifier as rf
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
 from sklearn.metrics import (
@@ -7,12 +11,6 @@ from sklearn.metrics import (
     ConfusionMatrixDisplay
 )
 
-import Decision_tree
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
-from Decision_tree import predict_decision_tree
 
 data = np.load('all_ecg_features.npz')
 X = data['X']
@@ -44,10 +42,10 @@ print(f"Class distribution in original sample:")
 for label, percent in class_dist.items():
     print(f"  Class {label}: {percent:.2f}%")
 
+random_forest = rf.RandomForestClassifier(n_estimators=20, feature_percentage=1, sample_percentage=1, max_depth=4)
+random_forest.fit(X_train, y_train)
 
-decision_tree = Decision_tree.build_decision_tree(X_train, y_train, 5)
-
-y_pred = X_test.apply(lambda row: predict_decision_tree(row, decision_tree), axis=1)
+y_pred = X_test.apply(lambda row: random_forest.predict(row), axis=1)
 
 # Accuracy
 print("Accuracy:", accuracy_score(y_test, y_pred))
@@ -63,8 +61,4 @@ plt.figure(figsize=(8, 6))
 disp.plot(cmap='Blues', values_format='d')
 plt.title("Confusion Matrix")
 plt.show()
-
-
-
-
 

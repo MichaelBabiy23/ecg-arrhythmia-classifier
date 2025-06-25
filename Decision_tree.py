@@ -80,7 +80,7 @@ def build_decision_tree(relative_X, relative_y, max_depth, current_depth=0):
 
 # Predict new sample class with decision tree
 def predict_decision_tree(new_sample, decision_tree):
-    if not decision_tree.left and not decision_tree.right:
+    if decision_tree and not decision_tree.left and not decision_tree.right:
         return decision_tree.pred
 
     if new_sample[decision_tree.feature_index] <= decision_tree.threshold:
