@@ -12,6 +12,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from Decision_tree import predict_decision_tree
+
 data = np.load('all_ecg_features.npz')
 X = data['X']
 y = data['y']
@@ -28,17 +30,17 @@ for i in range(4):
 
 feature_names.extend(['skewness', 'kurtosis'])
 X_df = pd.DataFrame(X, columns=feature_names)
-y_df = pd.DataFrame(y, columns=['label'])
+y_series = pd.Series(y)
+
+X_small = X_df.sample(n=100, random_state=42)
+y_small = y_series.loc[X_small.index]
 
 X_train, X_test, y_train, y_test = train_test_split(
-    X_df, y_df, test_size=0.33, random_state=42, stratify=y)
+    X_small, y_small, test_size=0.33, random_state=42)
 
-decision_tree = Decision_tree.build_decision_tree(X_train, y_train, 10)
+decision_tree = Decision_tree.build_decision_tree(X_small, y_small, 10)
 
-y_pred = []
-
-for sample in X_test:
-    y_pred.append(decision_tree.predict(sample))
+y_pred = X_test.apply(lambda row: predict_decision_tree(row, decision_tree), axis=1)
 
 # Accuracy
 print("Accuracy:", accuracy_score(y_test, y_pred))
@@ -47,8 +49,8 @@ print("Accuracy:", accuracy_score(y_test, y_pred))
 print("\nClassification Report:")
 print(classification_report(y_test, y_pred))
 
-cm = confusion_matrix(y_test, y_pred, labels=y.unique())
-disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=y.unique())
+cm = confusion_matrix(y_test, y_pred, labels=y_small.unique())
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=y_small.unique())
 
 plt.figure(figsize=(8, 6))
 disp.plot(cmap='Blues', values_format='d')

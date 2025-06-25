@@ -1,7 +1,7 @@
 class TreeNode:
 
-    def __init__(self, cost, threshold, feature_index,
-                 left=None, right=None, pred=None):
+    def __init__(self, threshold=None, feature_index=None,
+                 left=None, right=None, pred=None, cost=None):
         self.cost = cost
         self.threshold = threshold
         self.feature_index = feature_index
