@@ -31,7 +31,7 @@ feature_names.extend(['skewness', 'kurtosis'])
 X_df = pd.DataFrame(X, columns=feature_names)
 y_series = pd.Series(y)
 
-X_small = X_df.sample(n=500, random_state=42)
+X_small = X_df.sample(n=1000, random_state=42)
 y_small = y_series.loc[X_small.index]
 
 X_train, X_test, y_train, y_test = train_test_split(
@@ -45,9 +45,9 @@ for label, percent in class_dist.items():
 
 # Create and train Random Forest
 random_forest_b = RandomForestClassifier(
-    n_estimators=2,               # Same as your n_estimators
+    n_estimators=50,               # Same as your n_estimators
     max_depth=4,                  # Same as your max_depth
-    max_features=0.1,             # None means use all features (equivalent to feature_percentage=1)
+    max_features=0.7,             # None means use all features (equivalent to feature_percentage=1)
     max_samples=0.1,              # None means use all samples when bootstrap=True
     random_state=42
 )
@@ -57,7 +57,7 @@ random_forest_b.fit(X_train, y_train)
 # Make predictions
 y_pred_b = random_forest_b.predict(X_test)
 print('ours is being trained...')
-random_forest = rf.RandomForestClassifier(n_estimators=2, feature_percentage=0.1, sample_percentage=0.1, max_depth=4)
+random_forest = rf.RandomForestClassifier(n_estimators=50, feature_percentage=0.7, sample_percentage=0.1, max_depth=4)
 random_forest.fit(X_train, y_train)
 
 y_pred = X_test.apply(lambda row: random_forest.predict(row), axis=1)

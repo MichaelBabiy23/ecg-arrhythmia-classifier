@@ -1,21 +1,25 @@
 import random
-from Decision_tree import predict_decision_tree, build_decision_tree
+
+import Decision_tree
+from Decision_tree import fit, predict_single
 import statistics
 import numpy as np
 
 class RandomForestClassifier:
     def __init__(self, n_estimators=10, feature_percentage=0.5, sample_percentage=0.5, max_depth=5):
         self.n_estimators = n_estimators
-        self.feature_percentage = feature_percentage
-        self.sample_percentage = sample_percentage
         self.max_depth = max_depth
         self.trees = []
+
+        if not sample_percentage or sample_percentage <= 0 or sample_percentage > 1:
+            self.sample_percentage = 0.5
+
+        if not feature_percentage or feature_percentage <= 0 or feature_percentage > 1:
+            self.feature_percentage = 0.5
 
     def select_features(self, X):
         # Select random subset of features
         n_features = int(self.feature_percentage * X.shape[1])
-        n_features = max(1, n_features)  # Ensure at least 1 feature
-        n_features = min(n_features, X.shape[1])  # Don't exceed available features
 
         feature_indices = random.sample(range(X.shape[1]), n_features)
         return X.iloc[:, feature_indices]
@@ -39,7 +43,7 @@ class RandomForestClassifier:
             # Feature selection
             filtered_X = self.select_features(sample_X)
 
-            tree = build_decision_tree(filtered_X, sample_y, self.max_depth)
+            tree = fit(filtered_X, sample_y, self.max_depth)
             self.trees.append((tree, filtered_X.columns))
 
             # 🔹 Print class distribution as percentages
@@ -52,7 +56,7 @@ class RandomForestClassifier:
         preds = []
         for tree, features in self.trees:
             sample_subset = new_sample[features]
-            preds.append(predict_decision_tree(sample_subset, tree))
+            preds.append(predict_single(sample_subset, tree))
 
         return statistics.mode(preds)[0]
 
