@@ -1,4 +1,5 @@
 from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, plot_tree
 
 from sklearn.metrics import (
     accuracy_score,
@@ -45,25 +46,48 @@ for label, percent in class_dist.items():
     print(f"  Class {label}: {percent:.2f}%")
 
 
+decision_tree_b = DecisionTreeClassifier(
+    max_depth=5,                  # Maximum depth of the tree
+    min_samples_leaf=20,           # Minimum samples required at a leaf node
+    criterion='gini',             # Split criterion ('gini' or 'entropy')
+    random_state=42
+)
+print('training theirs...')
+# Train the model
+decision_tree_b.fit(X_train, y_train)
+
+# Make predictions
+y_pred_b = decision_tree_b.predict(X_test)
+print('now ours...')
 decision_tree = Decision_tree.build_decision_tree(X_train, y_train, 5)
 
 y_pred = X_test.apply(lambda row: predict_decision_tree(row, decision_tree), axis=1)
 
 # Accuracy
-print("Accuracy:", accuracy_score(y_test, y_pred))
+print("Accuracy ours:", accuracy_score(y_test, y_pred), 'Accuracy theirs:', accuracy_score(y_test, y_pred_b))
 
 # Detailed metrics (per class: precision, recall, f1-score)
-print("\nClassification Report:")
+print("\nClassification Report ours:")
 print(classification_report(y_test, y_pred))
+
+print("\nClassification Report theirs:")
+print(classification_report(y_test, y_pred_b))
 
 cm = confusion_matrix(y_test, y_pred, labels=y_small.unique())
 disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=y_small.unique())
 
+cm_b = confusion_matrix(y_test, y_pred_b, labels=y_small.unique())
+disp_b = ConfusionMatrixDisplay(confusion_matrix=cm_b, display_labels=y_small.unique())
+
 plt.figure(figsize=(8, 6))
 disp.plot(cmap='Blues', values_format='d')
-plt.title("Confusion Matrix")
-plt.show()
+plt.title("Confusion Matrix ours")
 
+plt.figure(figsize=(8, 6))
+disp_b.plot(cmap='Blues', values_format='d')
+plt.title("Confusion Matrix theirs")
+
+plt.show()
 
 
 
