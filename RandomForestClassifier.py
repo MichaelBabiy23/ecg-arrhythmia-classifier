@@ -6,10 +6,13 @@ import statistics
 import numpy as np
 
 class RandomForestClassifier:
-    def __init__(self, n_estimators=10, feature_percentage=0.5, sample_percentage=0.5, max_depth=5):
+    def __init__(self, min_samples_split=20, n_estimators=10, feature_percentage=0.5, sample_percentage=0.5, max_depth=5):
         self.n_estimators = n_estimators
+        self.min_samples_split = min_samples_split
         self.max_depth = max_depth
         self.trees = []
+        self.feature_percentage = feature_percentage
+        self.sample_percentage = sample_percentage
 
         if not sample_percentage or sample_percentage <= 0 or sample_percentage > 1:
             self.sample_percentage = 0.5
@@ -24,7 +27,7 @@ class RandomForestClassifier:
         feature_indices = random.sample(range(X.shape[1]), n_features)
         return X.iloc[:, feature_indices]
 
-    def bootstrap_sample(self, X, y):
+    def select_sample(self, X, y):
         # Create bootstrap sample with replacement
         n_samples = int(self.sample_percentage * X.shape[0])
         n_samples = max(1, n_samples)  # Ensure at least 1 sample
@@ -38,12 +41,12 @@ class RandomForestClassifier:
     def fit(self, X, y):
         for i in range(self.n_estimators):
             # Bootstrap sampling
-            sample_X, sample_y = self.bootstrap_sample(X, y)
+            sample_X, sample_y = self.select_sample(X, y)
 
             # Feature selection
             filtered_X = self.select_features(sample_X)
 
-            tree = fit(filtered_X, sample_y, self.max_depth)
+            tree = fit(filtered_X, sample_y, self.max_depth, self.min_samples_split)
             self.trees.append((tree, filtered_X.columns))
 
             # 🔹 Print class distribution as percentages
