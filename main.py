@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from Decision_tree import predict_decision_tree
+from Decision_tree import fit, predict
 
 data = np.load('all_ecg_features.npz')
 X = data['X']
@@ -59,9 +59,11 @@ decision_tree_b.fit(X_train, y_train)
 # Make predictions
 y_pred_b = decision_tree_b.predict(X_test)
 print('now ours...')
-decision_tree = Decision_tree.build_decision_tree(X_train, y_train, 5)
 
-y_pred = X_test.apply(lambda row: predict_decision_tree(row, decision_tree), axis=1)
+# Training:
+decision_tree = fit(X_train, y_train, max_depth=5, min_samples_split=20)
+# # Prediction:
+y_pred = predict(X_test, decision_tree)
 
 # Accuracy
 print("Accuracy ours:", accuracy_score(y_test, y_pred), 'Accuracy theirs:', accuracy_score(y_test, y_pred_b))

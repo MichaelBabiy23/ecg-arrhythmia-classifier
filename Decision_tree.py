@@ -1,91 +1,183 @@
 import numpy as np
 import pandas as pd
 import TreeNode
-import statistics
+from collections import Counter
 
-# Calculate a section cost
-def gini_cost_function(relative_y):
-    classes = relative_y.unique()
-    cost = 0
-    for c in classes:
-        prob = np.mean(relative_y == c)
-        cost += prob * (1 - prob)
+class DecisionTreeClassifier:
+    def __init__(self, max_depth, X=np.array([]), y=np.array([]), sample_weights=None):
+        self.sample_weights = sample_weights
+        self.X=X
+        self.y=y
+        self.max_depth = max_depth
+        self.node = None
+        self.classes = None
 
-    return 2*cost
+    # Calculate gini impurity
+    def gini_cost_function(self, y, current_weights):
+        if len(y) == 0:
+            return 0
+        total_weight = np.sum(current_weights)
 
-# Calculate total split improvement
-def find_improvement(father_cost, left_indexes, right_indexes, relative_y):
-    samples_in_left_section = len(left_indexes)
-    samples_in_right_section = len(right_indexes)
-    left_child_cost = gini_cost_function(relative_y.loc[left_indexes])
-    right_child_cost = gini_cost_function(relative_y.loc[right_indexes])
-    weighted_avg = (left_child_cost * samples_in_left_section) + (samples_in_right_section * right_child_cost)
-    weighted_avg /= (samples_in_left_section  + samples_in_right_section)
-    return  father_cost - weighted_avg
+        probabilities = np.zeros(len(self.classes))
+        for sample in range(len(current_weights)):
+            current_class = y[sample]
+            current_cls_idx = self.class_to_idx(current_class)
+            probabilities[current_cls_idx] += current_weights[sample]
 
-# Create a split in the data
-def create_split(relative_X, feature, threshold):
-    return (relative_X[relative_X.iloc[:, feature] <= threshold].index,
-            relative_X[relative_X.iloc[:, feature] >= threshold].index)
+        probabilities = probabilities / total_weight
+        return 2 * np.sum(probabilities * (1 - probabilities))
 
-# Check for every threshold
-def find_best_split(relative_X, relative_y, father_cost):
+    # Find best split
+    def find_best_split(self, indices):
+        n_features = self.X.shape[1]
+        n_samples = len(indices)
+        if n_samples <= 1:
+            return None, None, None, None
 
-    def get_candidate_thresholds(values):
-        # Assumes values are sorted and unique
-        return [(v1 + v2) / 2 for v1, v2 in zip(values[:-1], values[1:])]
+        # Current data
+        current_X = self.X[indices]
+        current_y = self.y[indices]
+        current_weights = self.sample_weights[indices]
+        parent_gini = self.gini_cost_function(current_y, current_weights)
 
-    features = relative_X.shape[1]
-    best_improvement = 0
-    best_split_feature_index = None
-    best_split_threshold = relative_X.iloc[0,0]
-    best_left_indexes = None
-    best_right_indexes = None
+        best_gain = 0
+        best_feature = None
+        best_threshold = None
+        best_left_indices = None
+        best_right_indices = None
 
-    for feature_index in range(features):
-        values = relative_X.iloc[:, feature_index].sort_values().unique()
-        thresholds = get_candidate_thresholds(values)
-        for threshold in thresholds:
-            left_index, right_index = create_split(relative_X, feature_index, threshold)
-            improvement = find_improvement(father_cost, left_indexes=left_index,
-                                           right_indexes=right_index, relative_y=relative_y)
-            if improvement > best_improvement:
-                best_improvement = improvement
-                best_split_threshold = threshold
-                best_split_feature_index = feature_index
-                best_left_indexes = left_index
-                best_right_indexes = right_index
+        for feature_idx in range(n_features):
+            # Get unique values for this feature
+            feature_values = current_X[:, feature_idx]
+            unique_values = np.unique(feature_values)
 
-    return best_split_feature_index, best_split_threshold, best_left_indexes, best_right_indexes
+            if len(unique_values) <= 1:
+                continue
 
-# Build decision tree
-def build_decision_tree(relative_X, relative_y, max_depth, current_depth=0):
-    if current_depth >= max_depth or len(relative_y.unique()) == 1 or len(relative_X) <= 20:
-        leaf = TreeNode.TreeNode(pred=statistics.mode(relative_y)[0])
-        return leaf
+            # Try thresholds between consecutive unique values
+            for i in range(len(unique_values) - 1):
+                threshold = (unique_values[i] + unique_values[i + 1]) / 2
 
-    cost = gini_cost_function(relative_y)
-    best_split_feature, best_split_threshold, best_left_indexes, best_right_indexes = find_best_split(relative_X, relative_y, cost)
+                # Split based on threshold
+                left_mask = feature_values <= threshold
+                right_mask = ~left_mask
 
-    if best_split_feature is None:
-        leaf = TreeNode.TreeNode(pred=statistics.mode(relative_y)[0])
-        return leaf
+                if np.sum(left_mask) == 0 or np.sum(right_mask) == 0:
+                    continue
 
-    node = TreeNode.TreeNode(cost=cost, threshold=best_split_threshold, feature_index=best_split_feature)
+                # Calculate weighted gini for this split
+                left_gini = self.gini_cost_function(current_y[left_mask], current_weights[left_mask])
+                right_gini = self.gini_cost_function(current_y[right_mask], current_weights[right_mask])
 
-    node.left = build_decision_tree(relative_X.loc[best_left_indexes], relative_y.loc[best_left_indexes], max_depth, current_depth+1)
-    node.right = build_decision_tree(relative_X.loc[best_right_indexes], relative_y.loc[best_right_indexes], max_depth, current_depth+1)
+                n_left = np.sum(left_mask)
+                n_right = np.sum(right_mask)
 
-    return node
+                weighted_gini = (n_left * left_gini + n_right * right_gini) / n_samples
+                gain = parent_gini - weighted_gini
 
-# Predict new sample class with decision tree
-def predict_decision_tree(new_sample, decision_tree):
-    if decision_tree and not decision_tree.left and not decision_tree.right:
-        return decision_tree.pred
+                if gain > best_gain:
+                    best_gain = gain
+                    best_feature = feature_idx
+                    best_threshold = threshold
+                    best_left_indices = indices[left_mask]
+                    best_right_indices = indices[right_mask]
 
-    if new_sample[decision_tree.feature_index] <= decision_tree.threshold:
-        return predict_decision_tree(new_sample, decision_tree.left)
-
-    return predict_decision_tree(new_sample, decision_tree.right)
+        return best_feature, best_threshold, best_left_indices, best_right_indices
 
 
+    # Build decision tree
+    def build_decision_tree(self, indices=None, current_depth=0, min_samples_split=20):
+        if indices is None:
+            indices = np.arange(len(self.X))
+
+        current_y = self.y[indices]
+        n_samples = len(indices)
+
+        # Stopping conditions
+        if (current_depth >= self.max_depth or
+                len(np.unique(current_y)) == 1 or
+                n_samples <= min_samples_split):
+            # Create leaf node
+            most_common = Counter(current_y).most_common(1)[0][0]
+            return TreeNode.TreeNode(pred=most_common)
+
+        # Find best split
+        best_feature, best_threshold, left_indices, right_indices = self.find_best_split(indices)
+
+        if best_feature is None or left_indices is None or right_indices is None:
+            # No good split found, create leaf
+            most_common = Counter(current_y).most_common(1)[0][0]
+            return TreeNode.TreeNode(pred=most_common)
+
+        # Create internal node
+        node = TreeNode.TreeNode(
+            threshold=best_threshold,
+            feature_index=best_feature,
+            pred=Counter(current_y).most_common(1)[0][0]  # Fallback prediction
+        )
+
+        # Recursively build children
+        node.left = self.build_decision_tree(
+            left_indices, current_depth + 1, min_samples_split
+        )
+        node.right = self.build_decision_tree(
+            right_indices, current_depth + 1, min_samples_split
+        )
+
+        return node
+
+
+    def predict(self, X):
+        """Predict for multiple samples at once"""
+        if isinstance(X, pd.DataFrame):
+            X = X.values
+
+        predictions = []
+        for i in range(len(X)):
+            pred = self.predict_single(X[i], self.node)
+            predictions.append(pred)
+
+        return np.array(predictions)
+
+
+    def predict_single(self, sample, node):
+        """Predict for a single sample"""
+        # If leaf node (no childrens)
+        if not node.right and not node.left:
+            return node.pred
+
+        # Traverse tree
+        if sample[node.feature_index] <= node.threshold:
+            if hasattr(node, 'left') and node.left is not None:
+                return self.predict_single(sample, node.left)
+            else:
+                return node.pred
+        else:
+            if hasattr(node, 'right') and node.right is not None:
+                return self.predict_single(sample, node.right)
+            else:
+                return node.pred
+
+
+    # Wrapper function to convert pandas to numpy
+    def fit(self, X_df, y_series, min_samples_split=20):
+        """Convert pandas input to numpy and build tree"""
+        X_np = X_df.values if isinstance(X_df, pd.DataFrame) else X_df
+        y_np = y_series.values if isinstance(y_series, pd.Series) else y_series
+
+        self.X = X_np
+        self.y = y_np
+
+        if self.sample_weights is None:
+            self.sample_weights = np.ones(len(y_series))
+
+        self.classes = np.unique(y_np)
+
+        self.node = self.build_decision_tree(
+                min_samples_split=min_samples_split
+        )
+
+    def class_to_idx(self, cls):
+        for i in range(len(self.classes)):
+            if cls == self.classes[i]:
+                return i
