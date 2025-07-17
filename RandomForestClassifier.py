@@ -1,7 +1,8 @@
 import random
 
-import Decision_tree
-from Decision_tree import fit, predict_single
+import pandas as pd
+
+from Decision_tree import DecisionTreeClassifier
 import statistics
 import numpy as np
 
@@ -46,7 +47,8 @@ class RandomForestClassifier:
             # Feature selection
             filtered_X = self.select_features(sample_X)
 
-            tree = fit(filtered_X, sample_y, self.max_depth, self.min_samples_split)
+            tree = DecisionTreeClassifier(max_depth=self.max_depth)
+            tree.fit(filtered_X, sample_y, min_samples_split=self.min_samples_split)
             self.trees.append((tree, filtered_X.columns))
 
             # 🔹 Print class distribution as percentages
@@ -55,13 +57,27 @@ class RandomForestClassifier:
             for label, percent in class_dist.items():
                 print(f"  Class {label}: {percent:.2f}%")
 
-    def predict(self, new_sample):
-        preds = []
-        for tree, features in self.trees:
-            sample_subset = new_sample[features]
-            preds.append(predict_single(sample_subset, tree))
+    def predict(self, X):
+        if isinstance(X, pd.DataFrame):
+            X_arr = X.values
+        else:
+            X_arr = np.asarray(X)
 
-        return statistics.mode(preds)[0]
+        n_samples = X.shape[0]
+        final_preds = []
+
+        # for each sample…
+        for i in range(n_samples):
+            votes = []
+            # ask every tree for its prediction on that sample
+            for tree, features in self.trees:
+                # features should be a list/array of column indices
+                x_sub = X_arr[i, features]
+                votes.append((tree.predict(x_sub))[0])
+            # majority vote
+            final_preds.append(statistics.mode(votes)[0])
+
+        return np.array(final_preds)
 
 
 
