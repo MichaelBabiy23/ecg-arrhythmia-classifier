@@ -26,7 +26,7 @@ class RandomForestClassifier:
         n_features = int(self.feature_percentage * X.shape[1])
 
         feature_indices = random.sample(range(X.shape[1]), n_features)
-        return X.iloc[:, feature_indices]
+        return X[:, feature_indices], feature_indices
 
     def select_sample(self, X, y):
         # Create bootstrap sample with replacement
@@ -36,20 +36,22 @@ class RandomForestClassifier:
         # Bootstrap sampling (with replacement)
         sample_indices = np.random.choice(X.shape[0], size=n_samples, replace=True)
 
-        return X.iloc[sample_indices], y.iloc[sample_indices]
-
+        return X[sample_indices], y[sample_indices]
 
     def fit(self, X, y):
+        X = np.asarray(X)
+        y = np.asarray(y)
+
         for i in range(self.n_estimators):
             # Bootstrap sampling
             sample_X, sample_y = self.select_sample(X, y)
 
             # Feature selection
-            filtered_X = self.select_features(sample_X)
+            filtered_X, feature_indices = self.select_features(sample_X)
 
             tree = DecisionTreeClassifier(max_depth=self.max_depth)
             tree.fit(filtered_X, sample_y, min_samples_split=self.min_samples_split)
-            self.trees.append((tree, filtered_X.columns))
+            self.trees.append((tree, feature_indices))
 
             # 🔹 Print class distribution as percentages
             class_dist = sample_y.value_counts(normalize=True) * 100
@@ -58,11 +60,7 @@ class RandomForestClassifier:
                 print(f"  Class {label}: {percent:.2f}%")
 
     def predict(self, X):
-        if isinstance(X, pd.DataFrame):
-            X_arr = X.values
-        else:
-            X_arr = np.asarray(X)
-
+        X = np.asarray(X)
         n_samples = X.shape[0]
         final_preds = []
 
@@ -70,10 +68,10 @@ class RandomForestClassifier:
         for i in range(n_samples):
             votes = []
             # ask every tree for its prediction on that sample
-            for tree, features in self.trees:
+            for tree, feature_indices in self.trees:
                 # features should be a list/array of column indices
-                x_sub = X_arr[i, features]
-                votes.append((tree.predict(x_sub))[0])
+                x_sub = X[i, feature_indices].reshape(1, -1)
+                votes.append(tree.predict(x_sub)[0])
             # majority vote
             final_preds.append(statistics.mode(votes)[0])
 

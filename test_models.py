@@ -114,7 +114,7 @@ rf_model_ours = RF_ours(
     min_samples_split=1
 )
 rf_model_ours.fit(X_train, y_train)
-y_pred_rf_ours = X_test.apply(lambda row: rf_model_ours.predict(row), axis=1)
+y_pred_rf_ours = rf_model_ours.predict(X_test)
 
 evaluate("Random Forest", y_test, y_pred_rf_ours, y_pred_sk_rf, labels)
 

@@ -4,8 +4,10 @@ import TreeNode
 from collections import Counter
 
 class DecisionTreeClassifier:
-    def __init__(self, max_depth, sample_weights=None):
+    def __init__(self, max_depth, X=np.array([]), y=np.array([]), sample_weights=None):
         self.sample_weights = sample_weights
+        self.X=X
+        self.y=y
         self.max_depth = max_depth
         self.node = None
         self.classes = None
@@ -14,7 +16,7 @@ class DecisionTreeClassifier:
     def gini_cost_function(self, y, current_weights):
         if len(y) == 0:
             return 0
-        total_weight = np.sum(self.sample_weights)
+        total_weight = np.sum(current_weights)
 
         probabilities = np.zeros(len(self.classes))
         for sample in range(len(current_weights)):
@@ -26,21 +28,17 @@ class DecisionTreeClassifier:
         return 2 * np.sum(probabilities * (1 - probabilities))
 
     # Find best split
-    def find_best_split(self, X, y, indices):
-        n_features = X.shape[1]
+    def find_best_split(self, indices):
+        n_features = self.X.shape[1]
         n_samples = len(indices)
-        print('indices:', n_samples)
         if n_samples <= 1:
             return None, None, None, None
 
-        print('X:', X.shape)
-
         # Current data
-        current_X = X[indices]
-        print('indices:', n_samples)
-        print('current x:', current_X.shape)
-        current_y = y[indices]
-        parent_gini = self.gini_cost_function(current_y, self.sample_weights[indices])
+        current_X = self.X[indices]
+        current_y = self.y[indices]
+        current_weights = self.sample_weights[indices]
+        parent_gini = self.gini_cost_function(current_y, current_weights)
 
         best_gain = 0
         best_feature = None
@@ -68,31 +66,31 @@ class DecisionTreeClassifier:
                     continue
 
                 # Calculate weighted gini for this split
-                left_gini = self.gini_cost_function(current_y[left_mask], self.sample_weights[left_mask])
-                right_gini = self.gini_cost_function(current_y[right_mask], self.sample_weights[right_mask])
+                left_gini = self.gini_cost_function(current_y[left_mask], current_weights[left_mask])
+                right_gini = self.gini_cost_function(current_y[right_mask], current_weights[right_mask])
 
                 n_left = np.sum(left_mask)
                 n_right = np.sum(right_mask)
 
                 weighted_gini = (n_left * left_gini + n_right * right_gini) / n_samples
                 gain = parent_gini - weighted_gini
-                print('before if indices', len(indices))
+
                 if gain > best_gain:
                     best_gain = gain
                     best_feature = feature_idx
                     best_threshold = threshold
                     best_left_indices = indices[left_mask]
                     best_right_indices = indices[right_mask]
-        print('left indices:', len(best_left_indices))
+
         return best_feature, best_threshold, best_left_indices, best_right_indices
 
 
     # Build decision tree
-    def build_decision_tree(self, X, y, indices=None, current_depth=0, min_samples_split=20):
+    def build_decision_tree(self, indices=None, current_depth=0, min_samples_split=20):
         if indices is None:
-            indices = np.arange(len(X))
+            indices = np.arange(len(self.X))
 
-        current_y = y[indices]
+        current_y = self.y[indices]
         n_samples = len(indices)
 
         # Stopping conditions
@@ -104,7 +102,7 @@ class DecisionTreeClassifier:
             return TreeNode.TreeNode(pred=most_common)
 
         # Find best split
-        best_feature, best_threshold, left_indices, right_indices = self.find_best_split(X, y, indices)
+        best_feature, best_threshold, left_indices, right_indices = self.find_best_split(indices)
 
         if best_feature is None or left_indices is None or right_indices is None:
             # No good split found, create leaf
@@ -120,10 +118,10 @@ class DecisionTreeClassifier:
 
         # Recursively build children
         node.left = self.build_decision_tree(
-            X, y, left_indices, current_depth + 1, min_samples_split
+            left_indices, current_depth + 1, min_samples_split
         )
         node.right = self.build_decision_tree(
-            X, y, right_indices, current_depth + 1, min_samples_split
+            right_indices, current_depth + 1, min_samples_split
         )
 
         return node
@@ -167,13 +165,15 @@ class DecisionTreeClassifier:
         X_np = X_df.values if isinstance(X_df, pd.DataFrame) else X_df
         y_np = y_series.values if isinstance(y_series, pd.Series) else y_series
 
+        self.X = X_np
+        self.y = y_np
+
         if self.sample_weights is None:
             self.sample_weights = np.ones(len(y_series))
 
         self.classes = np.unique(y_np)
 
         self.node = self.build_decision_tree(
-                X_np, y_np,
                 min_samples_split=min_samples_split
         )
 
