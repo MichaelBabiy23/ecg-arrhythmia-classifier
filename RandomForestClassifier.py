@@ -53,11 +53,12 @@ class RandomForestClassifier:
             tree.fit(filtered_X, sample_y, min_samples_split=self.min_samples_split)
             self.trees.append((tree, feature_indices))
 
-            # 🔹 Print class distribution as percentages
-            class_dist = sample_y.value_counts(normalize=True) * 100
-            print(f"Tree {i + 1}: Class distribution in sample:")
-            for label, percent in class_dist.items():
-                print(f"  Class {label}: {percent:.2f}%")
+            # print class dist
+            labels, counts = np.unique(sample_y, return_counts=True)
+            percents = counts / counts.sum() * 100
+            print(f"Tree {i+1}: Class distribution in sample:")
+            for lbl, pct in zip(labels, percents):
+                print(f"  Class {lbl}: {pct:.2f}%")
 
     def predict(self, X):
         X = np.asarray(X)
@@ -73,7 +74,7 @@ class RandomForestClassifier:
                 x_sub = X[i, feature_indices].reshape(1, -1)
                 votes.append(tree.predict(x_sub)[0])
             # majority vote
-            final_preds.append(statistics.mode(votes)[0])
+            final_preds.append(statistics.mode(votes))
 
         return np.array(final_preds)
 

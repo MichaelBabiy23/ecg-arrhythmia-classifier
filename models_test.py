@@ -1,7 +1,5 @@
 # Combined testing script for Decision Tree, Random Forest, and AdaBoost
 
-# test_models.py
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -124,7 +122,7 @@ base = DecisionTreeClassifier(max_depth=1)
 sk_ab = AdaBoostClassifier(
     estimator=base,
     n_estimators=50, learning_rate=1.0,
-    algorithm="SAMME.R", random_state=42
+    algorithm="SAMME", random_state=42
 )
 sk_ab.fit(X_train, y_train)
 y_pred_sk_ab = sk_ab.predict(X_test)
