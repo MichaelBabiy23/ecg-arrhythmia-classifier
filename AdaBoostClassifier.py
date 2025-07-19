@@ -30,13 +30,13 @@ class AdaBoostClassifier:
             miss = y != pred
 
             # Compute weighted error
-            weighted_error = np.sum(w[miss])
+            epsilon_t = np.sum(w[miss])
 
-            if weighted_error <= 0:
+            if epsilon_t <= 0:
                 break
 
             # Compute level of expertise (SAMME)
-            alpha_t = 1/2 * np.log((1 - weighted_error) / weighted_error) + np.log(K - 1)
+            alpha_t = 1/2 * np.log((1 - epsilon_t) / epsilon_t) + np.log(K - 1)
 
             # Update weights
             # misclassified → up, correctly classified → down

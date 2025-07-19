@@ -9,7 +9,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.metrics import (
     accuracy_score, classification_report,
-    confusion_matrix, ConfusionMatrixDisplay
+    confusion_matrix, ConfusionMatrixDisplay, precision_recall_fscore_support
 )
 
 # Import your implementations
@@ -21,7 +21,7 @@ from AdaBoostClassifier import AdaBoostClassifier as AB_ours
 data = np.load('all_ecg_features.npz')
 X = data['X']
 y = data['y']
-
+print(X.shape, y.shape)
 # 2. Build feature names
 feature_names = [
     'length', 'mean', 'std', 'range',
@@ -95,7 +95,7 @@ evaluate("Decision Tree", y_test, y_pred_dt_ours, y_pred_sk_dt, labels)
 # ── Random Forest ──────────────────────────────────────────────────────────────
 # sklearn RF
 sk_rf = RandomForestClassifier(
-    n_estimators=100, max_depth=6,
+    n_estimators=100, max_depth=4,
     max_features=0.5, max_samples=0.5,
     min_samples_leaf=1, random_state=42,
     bootstrap=True
@@ -108,7 +108,7 @@ rf_model_ours = RF_ours(
     n_estimators=100,
     feature_percentage=0.5,
     sample_percentage=0.5,
-    max_depth=6,
+    max_depth=4,
     min_samples_split=1
 )
 rf_model_ours.fit(X_train, y_train)
@@ -121,18 +121,51 @@ evaluate("Random Forest", y_test, y_pred_rf_ours, y_pred_sk_rf, labels)
 base = DecisionTreeClassifier(max_depth=1)
 sk_ab = AdaBoostClassifier(
     estimator=base,
-    n_estimators=50, learning_rate=1.0,
+    n_estimators=60, learning_rate=1.0,
     algorithm="SAMME", random_state=42
 )
 sk_ab.fit(X_train, y_train)
 y_pred_sk_ab = sk_ab.predict(X_test)
 
 # our AdaBoost
-ab_model_ours = AB_ours(max_iterations=50)
+ab_model_ours = AB_ours(max_iterations=60)
 ab_model_ours.fit(X_train.values, y_train.values)
 y_pred_ab_ours = ab_model_ours.predict(X_test.values)
 
 evaluate("AdaBoost", y_test, y_pred_ab_ours, y_pred_sk_ab, labels)
 
-# Show all confusion matrices
+# --- 1) Grouped Bar Charts of Precision/Recall/F1 for Each Model ---
+models = {
+    "Decision Tree": y_pred_dt_ours,
+    "Random Forest": y_pred_rf_ours,
+    "AdaBoost":       y_pred_ab_ours
+}
+
+# compute per-class metrics
+metrics = {}
+for name, y_pred in models.items():
+    p, r, f1, _ = precision_recall_fscore_support(
+        y_test, y_pred,
+        labels=labels,
+        zero_division=0
+    )
+    metrics[name] = {"precision": p, "recall": r, "f1": f1}
+
+# plot one chart for each metric type
+for metric in ["precision", "recall", "f1"]:
+    plt.figure(figsize=(8, 4))
+    x     = np.arange(len(labels))
+    width = 0.25
+
+    for i, (model_name, vals) in enumerate(metrics.items()):
+        plt.bar(x + i*width, vals[metric], width, label=model_name)
+
+    plt.xticks(x + width, labels)
+    plt.xlabel("Class")
+    plt.ylabel(metric.capitalize())
+    plt.title(f"{metric.capitalize()} by Model and Class")
+    plt.legend()
+    plt.tight_layout()
+
+# show all at once
 plt.show()
