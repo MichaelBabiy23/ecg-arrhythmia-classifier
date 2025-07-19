@@ -31,9 +31,9 @@ class AdaBoostClassifier:
             miss = y != pred
 
             # Compute weighted error
-            weighted_error = np.sum(w[miss])
+            epsilon_t = np.sum(w[miss])
 
-            if weighted_error <= 0:
+            if epsilon_t <= 0:
                 break
 
             # Compute the classifier's weight (alpha_t) using the SAMME algorithm
