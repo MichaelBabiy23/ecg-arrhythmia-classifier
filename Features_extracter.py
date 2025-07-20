@@ -25,11 +25,13 @@ def map_to_AAMI(symbol):
     else:
         return 'Q'  # Default when it's something else
 
+# N is for Normal beats, S for Supraventricular ectopic, V for Ventricular ectopic, F for Fusion beat, and Q for Paced or unknown beats.
+# N is good, S is not bad, V is bad, F is okay, Q is unknown.
 
 # 3️⃣ Core function that reads one record and extracts features
 def extract_features_for_record(rec_name):
     # A. Read ECG signal and annotation file
-    full_rec_path = f"physionet.org/files/mitdb/1.0.0/{rec_name}"
+    full_rec_path = f"/Users/michaelbabiy/ecg-arrhythmia-classifier/ecg-arrhythmia-classifier/physionet.org/files/mitdb/1.0.0/{rec_name}"
     sig, fields = wfdb.rdsamp(full_rec_path, channels=[0])  # Lead I
     ann = wfdb.rdann(full_rec_path, 'atr')                  # Beat labels
     ecg = sig.flatten()
@@ -77,10 +79,12 @@ def extract_features_for_record(rec_name):
 
         # 3. Wavelet decomposition + stats for each band
         coeffs = pywt.wavedec(seg, 'db1', level=3)
+        print(f"Wavelet coeffs length: {len(coeffs)}")
         for c in coeffs:
             feats.extend([np.mean(c), np.std(c)])
 
         # 4. Shape descriptors: skewness & kurtosis of the segment
+        # skewness is a measure of asymmetry, kurtosis is a measure of "peakedness"
         feats.extend([scipy.stats.skew(seg), scipy.stats.kurtosis(seg)])
 
         features.append(feats)
