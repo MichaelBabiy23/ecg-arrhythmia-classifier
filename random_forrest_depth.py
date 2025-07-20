@@ -105,3 +105,66 @@ plt.title('Random Forest — n_estimators vs Accuracy')
 plt.grid(True)
 plt.show()
 
+
+n_features_percentages = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] 
+rf_accuracies = []
+
+for n_features in n_features_percentages:
+    print(f"Evaluating n_features: {n_features}")
+    rf_model_ours = RF_ours(n_estimators=100, max_depth=5, max_features=n_features)  # or pick depth you like
+    rf_model_ours.fit(X_train, y_train)
+    y_pred_rf_ours = rf_model_ours.predict(X_test)
+    acc = accuracy_score(y_test, y_pred_rf_ours)
+    rf_accuracies.append(acc)
+
+# Plot n_features vs accuracy
+plt.figure(figsize=(8, 5))
+plt.plot(n_features_percentages, rf_accuracies, marker='o')
+plt.xlabel('Feature Percentage (max_features)')
+plt.ylabel('Accuracy')
+plt.title('Random Forest — Feature Percentage vs Accuracy')
+plt.grid(True)
+plt.show()
+
+
+n_features_percentages = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] 
+rf_accuracies = []
+
+for n_features in n_features_percentages:
+    print(f"Evaluating n_features: {n_features}")
+    rf_model_ours = RF_ours(n_estimators=20, max_depth=5, feature_percentage=n_features)  # or pick depth you like
+    rf_model_ours.fit(X_train, y_train)
+    y_pred_rf_ours = rf_model_ours.predict(X_test)
+    acc = accuracy_score(y_test, y_pred_rf_ours)
+    rf_accuracies.append(acc)
+
+# Plot n_features vs accuracy
+plt.figure(figsize=(8, 5))
+plt.plot(n_features_percentages, rf_accuracies, marker='o')
+plt.xlabel('Feature Percentage (max_features)')
+plt.ylabel('Accuracy')
+plt.title('Random Forest — Feature Percentage vs Accuracy')
+plt.grid(True)
+plt.show()
+
+
+n_fsamples_percentages = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] 
+rf_accuracies = []
+
+for n_fsamples in n_fsamples_percentages:
+    print(f"Evaluating n_fsamples: {n_fsamples}")
+    rf_model_ours = RF_ours(n_estimators=20, max_depth=5, feature_percentage=0.6, sample_percentage=n_fsamples)  # or pick depth you like
+    rf_model_ours.fit(X_train, y_train)
+    y_pred_rf_ours = rf_model_ours.predict(X_test)
+    acc = accuracy_score(y_test, y_pred_rf_ours)
+    rf_accuracies.append(acc)
+
+# Plot n_fsamples vs accuracy
+plt.figure(figsize=(8, 5))
+plt.plot(n_fsamples_percentages, rf_accuracies, marker='o')
+plt.xlabel('Sample Percentage (max_samples)')
+plt.ylabel('Accuracy')
+plt.title('Random Forest — Sample Percentage vs Accuracy')
+plt.grid(True)
+plt.show()
+

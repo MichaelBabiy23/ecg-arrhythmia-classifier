@@ -1,6 +1,5 @@
 # 1️⃣ Import everything we need
 import wfdb                              # For reading ECG recordings & labels
-from wfdb.processing import xqrs_detect, ann2rr
 import numpy as np                      # For quick math with lists of numbers
 import pywt                             # For wavelet transformation
 import scipy.stats  # For higher-level stats (skewness, kurtosis)
@@ -40,7 +39,9 @@ def extract_features_for_record(rec_name):
     rpeaks = ann.sample
 
     rr_intervals = np.diff(rpeaks) / fs
-    rr_intervals = np.insert(rr_intervals, 0, rr_intervals[0])  # Adds the first RR value at index 0 to fix the shape
+    rr_intervals = np.insert(
+        rr_intervals, 0, rr_intervals[0]
+    )  # Adds the first RR value at index 0 to fix the shape
 
     print(f"Length of rpeaks: {len(rpeaks)}")
     print(f"Length of annotations: {len(ann.symbol)}")
@@ -58,12 +59,19 @@ def extract_features_for_record(rec_name):
         feats = []
 
         # 1. Simple waveform statistics for the segment
-        feats.extend([len(seg), np.mean(seg), np.std(seg), np.max(seg) - np.min(seg)])
+        feats.extend([
+            len(seg),
+            np.mean(seg),
+            np.std(seg),
+            np.max(seg) - np.min(seg),
+        ])
 
         # 2. Timing info: time between this detected beat and the next/previous
         # Uses the `rr_intervals` array derived from detected peaks.
         current_rr = rr_intervals[i]
-        prev_rr = rr_intervals[i - 1] if i > 0 else rr_intervals[i]  # If first beat, prev_rr = current_rr
+        prev_rr = (
+            rr_intervals[i - 1] if i > 0 else rr_intervals[i]
+        )  # If first beat, prev_rr = current_rr
 
         feats.extend([current_rr, prev_rr])
 
@@ -82,7 +90,14 @@ def extract_features_for_record(rec_name):
 
 
 # 4️⃣ Process **all** records in the MIT-BIH dataset
-record_ids = [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 111, 112, 113, 114, 115, 116, 117, 118, 119, 121, 122, 123, 124, 200, 201, 202, 203, 205, 207, 208, 209, 210, 212, 213, 214, 215, 217, 219, 220, 221, 222, 223, 228, 230, 231, 232, 233, 234]  # All 48 records from RECORDS file
+record_ids = [
+    100, 101, 102, 103, 104, 105, 106, 107,
+    108, 109, 111, 112, 113, 114, 115, 116,
+    117, 118, 119, 121, 122, 123, 124, 200,
+    201, 202, 203, 205, 207, 208, 209, 210,
+    212, 213, 214, 215, 217, 219, 220, 221,
+    222, 223, 228, 230, 231, 232, 233, 234
+]  # All 48 records from RECORDS file
 all_feats, all_labels = [], []
 
 for rec in record_ids:

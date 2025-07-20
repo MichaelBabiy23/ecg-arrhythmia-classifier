@@ -12,7 +12,7 @@ class AdaBoostClassifier:
         # Make X and y np arrays
         X = np.asarray(X)
         y = np.asarray(y)
-        
+
         n_samples = X.shape[0]
         self.classes = np.unique(y)
         # Init weights
@@ -40,6 +40,9 @@ class AdaBoostClassifier:
 
             # Update weights
             # misclassified → up, correctly classified → down
+            # In compare to binary AdaBoost, if miss is True, alpha_t is positive,
+            # if miss is False, alpha_t is negative
+            # On SAMME, if miss is False, the weight remains the same
             w *= np.exp(alpha_t * miss)
 
             # Normalize the weights
@@ -73,5 +76,3 @@ class AdaBoostClassifier:
         for i in range(len(self.classes)):
             if cls == self.classes[i]:
                 return i
-
-
