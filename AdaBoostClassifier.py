@@ -1,6 +1,7 @@
 import numpy as np
 from Decision_tree import DecisionTreeClassifier
 
+
 class AdaBoostClassifier:
     def __init__(self, max_iterations=50):
         self.max_iterations = max_iterations
@@ -12,7 +13,7 @@ class AdaBoostClassifier:
         # Make X and y np arrays
         X = np.asarray(X)
         y = np.asarray(y)
-        
+
         n_samples = X.shape[0]
         self.classes = np.unique(y)
         # Init weights
@@ -30,16 +31,21 @@ class AdaBoostClassifier:
             miss = y != pred
 
             # Compute weighted error
-            weighted_error = np.sum(w[miss])
+            epsilon_t = np.sum(w[miss])
 
-            if weighted_error <= 0:
+            if epsilon_t <= 0:
                 break
 
-            # Compute level of expertise (SAMME)
-            alpha_t = 1/2 * np.log((1 - weighted_error) / weighted_error) + np.log(K - 1)
+            # Compute the classifier's weight (alpha_t) using the SAMME algorithm
+            # The log(K-1) term adjusts the weight so that a random classifier gets an alpha of 0
+            alpha_t = (1/2 * np.log((1 - weighted_error) / weighted_error)
+                       + np.log(K - 1))
 
             # Update weights
             # misclassified → up, correctly classified → down
+            # In compare to binary AdaBoost, if miss is True, alpha_t is positive,
+            # if miss is False, alpha_t is negative
+            # On SAMME, if miss is False, the weight remains the same
             w *= np.exp(alpha_t * miss)
 
             # Normalize the weights
@@ -73,5 +79,4 @@ class AdaBoostClassifier:
         for i in range(len(self.classes)):
             if cls == self.classes[i]:
                 return i
-
-
+            
