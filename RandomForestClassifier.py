@@ -5,8 +5,7 @@ import numpy as np
 
 
 class RandomForestClassifier:
-    # TODO: Should we take sqrt(feature_percentage) instead of feature_percentage=0.5?
-    #       This is the default in scikit-learn, but not in the original paper
+
     def __init__(
             self, min_samples_split=20, n_estimators=10, 
             feature_percentage=0.5, sample_percentage=0.5, max_depth=5
@@ -49,7 +48,7 @@ class RandomForestClassifier:
         X = np.asarray(X)
         y = np.asarray(y)
 
-        for i in range(self.n_estimators):
+        for _ in range(self.n_estimators):
             # Bootstrap sampling: select random rows
             sample_X, sample_y = self.select_sample(X, y)
             # Feature selection: select random columns
@@ -73,7 +72,6 @@ class RandomForestClassifier:
             for tree, feature_indices in self.trees:
                 # Select the same features as used for this tree
                 x_sub = X[i, feature_indices].reshape(1, -1)
-                # TODO: Should we use tree.predict_single instead?
                 votes.append(tree.predict(x_sub)[0])
             # Use majority vote across all trees
             final_preds.append(statistics.mode(votes))
