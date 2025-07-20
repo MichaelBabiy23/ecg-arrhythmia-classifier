@@ -159,7 +159,6 @@ class DecisionTreeClassifier:
                 return node.pred
 
 
-    # Wrapper function to convert pandas to numpy
     def fit(self, X_df, y_series, min_samples_split=20):
         """Convert pandas input to numpy and build tree"""
         X_np = X_df.values if isinstance(X_df, pd.DataFrame) else X_df
