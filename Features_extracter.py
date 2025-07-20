@@ -33,7 +33,7 @@ def extract_features_for_record(rec_name):
     sig, fields = wfdb.rdsamp(full_rec_path, channels=[0])  # Lead I
     ann = wfdb.rdann(full_rec_path, 'atr')                  # Beat labels
     ecg = sig.flatten()
-    fs = fields['fs']                                  # ~360 Hz sampling rate
+    fs = fields['fs']                                  # ~360 Hz sampling rate (360 samples per second)
 
     # B. Find the R-peaks (heartbeats)
     rpeaks = ann.sample
