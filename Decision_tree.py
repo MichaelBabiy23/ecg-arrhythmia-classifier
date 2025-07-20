@@ -3,7 +3,6 @@ import pandas as pd
 import TreeNode
 from collections import Counter
 
-
 class DecisionTreeClassifier:
     def __init__(
         self, max_depth, X=np.array([]), y=np.array([]), sample_weights=None
